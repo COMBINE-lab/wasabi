@@ -1,6 +1,6 @@
 # What is wasabi?
 
-Wasabi allows you to easily prepare Sailfish and Salmon output for downstream analysis.  
+Wasabi allows you to easily prepare [Sailfish](https://github.com/kingsfordgroup/sailfish) and [Salmon](https://github.com/COMBINE-lab/salmon) output for downstream analysis.  
 Currently, it's main purpose it to prepare output for downstream analysis with [sleuth](http://pachterlab.github.io/sleuth/).
 
 # How to use wasabi
