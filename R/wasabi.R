@@ -72,7 +72,7 @@ fish_to_hdf5 <- function(fish_dir, force) {
 
   # bootstrap group has (.. wait for it ..) bootstrap data
   if (numBoot > 0) {
-    h5createGroup(h5file, 'bootstrap')
+    rhdf5::h5createGroup(h5file, 'bootstrap')
     sapply(0:(numBoot-1), function(i) {
       bootid <- paste('bs', i, sep='')
       rhdf5::h5write(unlist(boots[,i+1]),
