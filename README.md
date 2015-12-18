@@ -7,7 +7,7 @@ Currently, its main purpose it to prepare output for downstream analysis with [s
 
 First, install the wasabi package.  This is easy with `devtools`:
 
-```
+```r
 source("http://bioconductor.org/biocLite.R")
 biocLite("devtools")    # only if devtools not yet installed
 biocLite("COMBINE-lab/wasabi")
@@ -15,7 +15,7 @@ biocLite("COMBINE-lab/wasabi")
 
 You can load the library with:
 
-```
+```r
 library(wasabi)
 ```
 
@@ -28,13 +28,13 @@ data/samp1   data/samp2   data/samp3   data/samp4
 
 First, we create a simple vector containing these directories (the `>` below is an R prompt):
 
-```
+```r
 > sfdirs <- file.path("data", c("samp1", "samp2", "samp3"))
 ```
 
 Now, we simply run the `prepare_fish_for_sleuth` function:
 
-```
+```r
 > prepare_fish_for_sleuth(sfidrs)
 ```
 
