@@ -3,7 +3,7 @@
 #' @param fish_dirs a character vector of length greater than one where each
 #' string points to a sailfish/salmon output directory
 #' @export
-prepare_fish <- function(fish_dirs, force=FALSE) {
+prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE) {
   testdir <- fish_dirs[1]
   if (file.exists(file.path(testdir, "aux", "meta_info.json"))) {
     sapply(fish_dirs, fish_to_hdf5, force=force)
@@ -20,9 +20,6 @@ prepare_fish <- function(fish_dirs, force=FALSE) {
 #' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
 fish_to_hdf5 <- function(fish_dir, force) {
-  library(data.table)
-  library(rjson)
-
   h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
     print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
@@ -57,7 +54,6 @@ fish_to_hdf5 <- function(fish_dir, force) {
   numProcessed <- minfo$num_processed
 
   # build the hdf5
-  library(rhdf5)
   h5createFile(h5file)
 
   # counts are at root
@@ -110,8 +106,6 @@ fish_to_hdf5 <- function(fish_dir, force) {
 #' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
 fish_to_hdf5_old <- function(fish_dir, force) {
-  library(data.table)
-
   h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
     print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
@@ -155,7 +149,6 @@ fish_to_hdf5_old <- function(fish_dir, force) {
   numProcessed <- stats[['numObservedFragments']]
 
   # build the hdf5
-  library(rhdf5)
   h5createFile(h5file)
 
   # counts are at root
