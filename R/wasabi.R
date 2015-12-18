@@ -1,43 +1,48 @@
 #' Convert sailfish/salmon results for one or more samples to kallisto HDF5
 #'
-#' @param sf_dirs a character vector of length greater than one where each
-#' string points to a sailfish output directory
+#' @param fish_dirs a character vector of length greater than one where each
+#' string points to a sailfish/salmon output directory
 #' @export
-prepare_fish <- function(sf_dirs, force=FALSE) {
-  testdir <- sf_dirs[1]
+prepare_fish <- function(fish_dirs, force=FALSE) {
+  testdir <- fish_dirs[1]
   if (file.exists(file.path(testdir, "aux", "meta_info.json"))) {
-    sapply(sf_dirs, sf_to_hdf5)
+    sapply(fish_dirs, fish_to_hdf5, force=force)
   } else {
-    sapply(sf_dirs, sf_to_hdf5_old)
+    sapply(fish_dirs, fish_to_hdf5_old, force=force)
   }
-  sf_dirs
+  fish_dirs
 }
 
 #' Convert sailfish results in new format
 #' SF ver >= 0.9.0, Salmon ver >= 0.6.0 for one sample to
 #' kallisto HDF5
 #'
-#' @param sf_dir path to a sailfish output directory
+#' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
-sf_to_hdf5 <- function(sf_dir, force) {
+fish_to_hdf5 <- function(fish_dir, force) {
   library(data.table)
   library(rjson)
 
-  h5file <- file.path(sf_dir, 'abundance.h5')
+  h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
-    print(paste("Skipping conversion: abundance.h5 already in ", sf_dir))
+    print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
     return()
+  }
+  # If we're forcing it, then we have to remove the file now
+  # or h5createFile will complain later
+  if (file.exists(h5file)) {
+    file.remove(h5file)
   }
 
   # load quantification data
-  quant <- fread(file.path(sf_dir, 'quant.sf'))
+  quant <- fread(file.path(fish_dir, 'quant.sf'))
   setnames(quant, c('target_id', 'length', 'eff_length', 'tpm', 'est_counts'))
 
   # get all of the meta info
-  minfo <- rjson::fromJSON(file=file.path(sf_dir, "aux", "meta_info.json"))
+  minfo <- rjson::fromJSON(file=file.path(fish_dir, "aux", "meta_info.json"))
 
   # load bootstrap data if it exists
-  auxPath <- file.path(sf_dir, 'aux')
+  auxPath <- file.path(fish_dir, 'aux')
   numBoot <- minfo$num_bootstraps
   if (numBoot > 0) {
     bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
@@ -95,32 +100,37 @@ sf_to_hdf5 <- function(sf_dir, force) {
   h5write(bExp, h5file, 'aux/bias_normalized')
 
   H5close()
-  print(paste("Successfully converted Sailfish results in", sf_dir, "to kallisto HDF5 format"))
+  print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
 
 #' Convert sailfish results in the older format
 #' sf ver <= 0.8.0, salmon ver <= 0.5.1 for one sample
 #' to kallisto HDF5
 #'
-#' @param sf_dir path to a sailfish output directory
+#' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
-sf_to_hdf5_old <- function(sf_dir, force) {
+fish_to_hdf5_old <- function(fish_dir, force) {
   library(data.table)
 
-  h5file <- file.path(sf_dir, 'abundance.h5')
+  h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
-    print(paste("Skipping conversion: abundance.h5 already in ", sf_dir))
+    print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
     return()
+  }
+  # If we're forcing it, then we have to remove the file now
+  # or h5createFile will complain later
+  if (file.exists(h5file)) {
+    file.remove(h5file)
   }
 
   # load quantification data
-  quant <- fread(file.path(sf_dir, 'quant.sf'))
+  quant <- fread(file.path(fish_dir, 'quant.sf'))
   setnames(quant, c('target_id', 'length', 'tpm', 'est_counts'))
   setkey(quant, 'target_id')
 
 
   # load bootstrap data if it exists
-  bootspath <- file.path(sf_dir, 'quant_bootstraps.sf')
+  bootspath <- file.path(fish_dir, 'quant_bootstraps.sf')
   numBoot <- 0
   if (file.exists(bootspath)) {
     boots <- fread(bootspath)
@@ -134,7 +144,7 @@ sf_to_hdf5_old <- function(sf_dir, force) {
   }
 
   # load stats
-  stats_tbl <- fread(file.path(sf_dir, 'stats.tsv'))
+  stats_tbl <- fread(file.path(fish_dir, 'stats.tsv'))
   stats <- stats_tbl$V2
   names(stats) <- stats_tbl$V1
   stats_tbl <- stats_tbl[-1]
@@ -174,5 +184,5 @@ sf_to_hdf5_old <- function(sf_dir, force) {
   }
 
   H5close()
-  print(paste("Successfully converted Sailfish results in", sf_dir, "to kallisto HDF5 format"))
+  print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
