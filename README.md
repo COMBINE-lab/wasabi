@@ -5,15 +5,28 @@ Currently, its main purpose it to prepare output for downstream analysis with [s
 
 # How to use wasabi
 
-First, install the wasabi package.  This is easy with `devtools`:
 
-```r
-source("http://bioconductor.org/biocLite.R")
-biocLite("devtools")    # only if devtools not yet installed
-biocLite("COMBINE-lab/wasabi")
-```
+## Installation 
 
-You can load the library with:
+First, you need to install the wasabi package.  There are two main ways to accomplish this:
+
+#### Installation with devtools
+  With `devtools`, it's easy to install `wasabi`:
+  ```r
+  source("http://bioconductor.org/biocLite.R")
+  biocLite("devtools")    # only if devtools not yet installed
+  biocLite("COMBINE-lab/wasabi")
+  ```
+    
+#### Installation with bioconda
+  Alternatively, you can use the [conda](http://conda.pydata.org/miniconda.html) package manager, along with the [bioconda](https://bioconda.github.io/) channel to install `wasabi`:
+  ```
+  conda install --channel bioconda r-wasabi
+  ```
+
+## Loading and using wasabi
+
+Once wasabi is installed, you can load the library with:
 
 ```r
 library(wasabi)
