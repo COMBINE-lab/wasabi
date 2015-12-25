@@ -57,28 +57,28 @@ fish_to_hdf5 <- function(fish_dir, force) {
   numProcessed <- minfo$num_processed
 
   # build the hdf5
-  h5createFile(h5file)
+  rhdf5::h5createFile(h5file)
 
   # counts are at root
-  h5write(quant$est_counts, h5file, '/est_counts')
+  rhdf5::h5write(quant$est_counts, h5file, '/est_counts')
 
   # aux group has metadata about the run and targets
-  h5createGroup(h5file, 'aux')
-  h5write(numProcessed, h5file, 'aux/num_processed')
-  h5write(numBoot, h5file, 'aux/num_bootstrap')
-  h5write(quant$length, h5file, 'aux/lengths')
-  h5write(quant$eff_length, h5file, 'aux/eff_lengths')
-  h5write(quant$target_id, h5file, 'aux/ids')
-  h5write('10', h5file, 'aux/index_version')
-  h5write('sailfish', h5file, 'aux/kallisto_version')
-  h5write(timestamp(prefix="", suffix=""), h5file, "aux/start_time")
+  rhdf5::h5createGroup(h5file, 'aux')
+  rhdf5::h5write(numProcessed, h5file, 'aux/num_processed')
+  rhdf5::h5write(numBoot, h5file, 'aux/num_bootstrap')
+  rhdf5::h5write(quant$length, h5file, 'aux/lengths')
+  rhdf5::h5write(quant$eff_length, h5file, 'aux/eff_lengths')
+  rhdf5::h5write(quant$target_id, h5file, 'aux/ids')
+  rhdf5::h5write('10', h5file, 'aux/index_version')
+  rhdf5::h5write('sailfish', h5file, 'aux/kallisto_version')
+  rhdf5::h5write(timestamp(prefix="", suffix=""), h5file, "aux/start_time")
 
   # bootstrap group has (.. wait for it ..) bootstrap data
   if (numBoot > 0) {
-    h5createGroup(h5file, 'bootstrap')
+    rhdf5::h5createGroup(h5file, 'bootstrap')
     sapply(0:(numBoot-1), function(i) {
       bootid <- paste('bs', i, sep='')
-      h5write(unlist(boots[,i+1]),
+      rhdf5::h5write(unlist(boots[,i+1]),
               h5file, paste('bootstrap', bootid, sep='/'))
     })
   }
@@ -86,19 +86,19 @@ fish_to_hdf5 <- function(fish_dir, force) {
   bootCon <- gzcon(file(file.path(auxPath, 'fld.gz'), "rb"))
   fld <- readBin(bootCon, "int", n=minfo$frag_dist_length)
   close(bootCon)
-  h5write(fld, h5file, 'aux/fld')
+  rhdf5::h5write(fld, h5file, 'aux/fld')
 
   bObsCon <- gzcon(file(file.path(auxPath, 'observed_bias.gz'), "rb"))
   bObs <- readBin(bObsCon, "int", n=minfo$num_bias_bins)
   close(bObsCon)
-  h5write(bObs, h5file, 'aux/bias_observed')
+  rhdf5::h5write(bObs, h5file, 'aux/bias_observed')
 
   bExpCon <- gzcon(file(file.path(auxPath, 'expected_bias.gz'), "rb"))
   bExp <- readBin(bObsCon, "double", n=minfo$num_bias_bins)
   close(bExpCon)
-  h5write(bExp, h5file, 'aux/bias_normalized')
+  rhdf5::h5write(bExp, h5file, 'aux/bias_normalized')
 
-  H5close()
+  rhdf5::H5close()
   print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
 
@@ -177,34 +177,34 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
   
 
   # build the hdf5
-  h5createFile(h5file)
+  rhdf5::h5createFile(h5file)
 
   # counts are at root
-  h5write(quant$est_counts, h5file, 'est_counts')
+  rhdf5::h5write(quant$est_counts, h5file, 'est_counts')
 
   # aux group has metadata about the run and targets
-  h5createGroup(h5file, 'aux')
-  h5write(numProcessed, h5file, 'aux/num_processed')
-  h5write(numBoot, h5file, 'aux/num_bootstrap')
-  h5write(quant$length, h5file, 'aux/lengths')
-  h5write(quant$eff_length, h5file, 'aux/eff_lengths')
-  h5write(quant$target_id, h5file, 'aux/ids')
-  h5write('10', h5file, 'aux/index_version')
-  h5write('sailfish', h5file, 'aux/kallisto_version')
-  h5write(timestamp(prefix="", suffix=""), h5file, "aux/start_time")
+  rhdf5::h5createGroup(h5file, 'aux')
+  rhdf5::h5write(numProcessed, h5file, 'aux/num_processed')
+  rhdf5::h5write(numBoot, h5file, 'aux/num_bootstrap')
+  rhdf5::h5write(quant$length, h5file, 'aux/lengths')
+  rhdf5::h5write(quant$eff_length, h5file, 'aux/eff_lengths')
+  rhdf5::h5write(quant$target_id, h5file, 'aux/ids')
+  rhdf5::h5write('10', h5file, 'aux/index_version')
+  rhdf5::h5write('sailfish', h5file, 'aux/kallisto_version')
+  rhdf5::h5write(timestamp(prefix="", suffix=""), h5file, "aux/start_time")
 
 
   # bootstrap group has (.. wait for it ..) bootstrap data
   if (numBoot > 0) {
-    h5createGroup(h5file, 'bootstrap')
+    rhdf5::h5createGroup(h5file, 'bootstrap')
     sapply(0:(numBoot-1), function(i) {
       bootid <- paste('bs', i, sep='')
-      h5write(unlist(quant[, bootid, with=FALSE]),
+      rhdf5::h5write(unlist(quant[, bootid, with=FALSE]),
               h5file, paste('bootstrap', bootid, sep='/'))
     })
   }
 
-  H5close()
+  rhdf5::H5close()
   print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
 
