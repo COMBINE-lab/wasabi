@@ -212,7 +212,6 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
 #' Produce a collection of counts consistent with a truncated normal
 #' distribution from 1 to max_len with the given mean and standard deviation
 #' 
-#' @export
 get_norm_fl_counts <- function(mean = mean, std = std, max_len) {
   dist <- vector(mode="numeric", max_len)
   totCount <- 10000
