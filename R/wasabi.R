@@ -3,12 +3,15 @@
 #' @param fish_dirs a character vector of length greater than one where each
 #' string points to a sailfish/salmon output directory
 #' @export
-prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE) {
+prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE, fallback_mu=200, fallback_sd=80, fallback_num_reads=-1) {
   testdir <- fish_dirs[1]
+  ## If we're dealing with the new format files 
   if (file.exists(file.path(testdir, "aux", "meta_info.json"))) {
     sapply(fish_dirs, fish_to_hdf5, force=force)
   } else {
-    sapply(fish_dirs, fish_to_hdf5_old, force=force)
+  ## We're dealing with the old format files
+    sapply(fish_dirs, fish_to_hdf5_old, force=force, 
+           fallback_mu=fallback_mu, fallback_sd=fallback_sd, fallback_num_reads=fallback_num_reads)
   }
   fish_dirs
 }
@@ -105,7 +108,7 @@ fish_to_hdf5 <- function(fish_dir, force) {
 #'
 #' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
-fish_to_hdf5_old <- function(fish_dir, force) {
+fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback_num_reads) {
   h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
     print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
@@ -138,15 +141,40 @@ fish_to_hdf5_old <- function(fish_dir, force) {
   }
 
   # load stats
-  stats_tbl <- fread(file.path(fish_dir, 'stats.tsv'))
-  stats <- stats_tbl$V2
-  names(stats) <- stats_tbl$V1
-  stats_tbl <- stats_tbl[-1]
-  setnames(stats_tbl, c('target_id', 'eff_length'))
-  setkey(stats_tbl, 'target_id')
-  quant <- merge(quant, stats_tbl)
-
-  numProcessed <- stats[['numObservedFragments']]
+  stats_file <- file.path(fish_dir, 'stats.tsv')
+  ##
+  # If the stats.tsv file exists, use that to get the 
+  # number of observed fragments and effective lengths
+  ##
+  if (file.exists(stats_file)) {
+    stats_tbl <- fread(stats_file)
+    stats <- stats_tbl$V2
+    names(stats) <- stats_tbl$V1
+    stats_tbl <- stats_tbl[-1]
+    setnames(stats_tbl, c('target_id', 'eff_length'))
+    setkey(stats_tbl, 'target_id')
+    quant <- merge(quant, stats_tbl)
+    numProcessed <- stats[['numObservedFragments']]
+  } else {
+  ##
+  # Otherwise, use hte provided value for the number of observed
+  # fragments and compute the effective lengths given the provided
+  # fragment length mean and standard deviation.
+  ##
+    max_len <- 1000
+    print('Found no stats.tsv file when parsing old fish directory')
+    print(sprintf('Generating fragment length distribution mu = %f, sd = %f, max len = %d', fallback_mu, fallback_sd, max_len))
+    norm_counts <- get_norm_fl_counts(fallback_mu, fallback_sd, max_len)
+    correction_factors <- get_eff_length_correction_factors(norm_counts, max_len)
+    quant$eff_length <- get_eff_lengths(quant$length, correction_factors, max_len)
+    if (fallback_num_reads < 0) {
+      numProcessed <- round(sum(quant$est_counts))
+    } else {
+      numProcessed <- fallback_num_reads
+    }
+    print(sprintf('Setting number of processed reads to %d', numProcessed))
+  }
+  
 
   # build the hdf5
   h5createFile(h5file)
@@ -179,3 +207,78 @@ fish_to_hdf5_old <- function(fish_dir, force) {
   H5close()
   print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
+
+
+#' Produce a collection of counts consistent with a truncated normal
+#' distribution from 1 to max_len with the given mean and standard deviation
+#' 
+#' @export
+get_norm_fl_counts <- function(mean = mean, std = std, max_len) {
+  dist <- vector(mode="numeric", max_len)
+  totCount <- 10000
+  
+  # Evaluate the function at the point p
+  kernel <- function(p) {
+    invStd = 1.0 / std
+    x = invStd * (p - mean)
+    exp(-0.5 * x * x) * invStd
+  }
+  
+  totMass = sum(unlist(lapply(1:max_len, kernel)))
+  
+  currDensity = 0.0
+  if (totMass > 0.0) {
+    for (i in 1:max_len) {
+      currDensity = kernel(i)
+      dist[i] = round(currDensity * totCount / totMass)
+    }
+  }
+  return(dist)
+}
+
+#' Given a collection of counts for each fragment length, produce
+#' a list of correction factors that should be applied to obtain the 
+#' effective length of each transcript from its un-normalized length
+#'
+get_eff_length_correction_factors <- function(counts, max_len) {
+  correctionFactors <- vector(mode="numeric", length=max_len)
+  vals <- vector(mode="numeric", length=max_len)
+  multiplicities <- vector(mode="numeric", length=max_len)
+  
+  multiplicities[1] = counts[1]
+  
+  for (i in 2:max_len) {
+    ci = i
+    pi = i-1
+    v = counts[ci]
+    vals[ci] = (v * ci) + vals[pi]
+    multiplicities[ci] = v + multiplicities[pi]
+    if (multiplicities[ci] > 0) {
+      correctionFactors[ci] = vals[ci] / multiplicities[ci]
+    }
+  }
+  return(correctionFactors)
+}
+
+#' Given a list of transcript lengths and correction factors, return
+#' a list of effective lengths.
+get_eff_lengths <- function(lengths, correction_factors, max_len) {
+  
+  eff_length <- function(orig_len) {
+    correction_factor <- 
+      if (orig_len >= max_len) { 
+        correction_factors[max_len] 
+      } else { 
+        correction_factors[orig_len] 
+      }
+    
+    eff_len <- orig_len - correction_factor + 1.0
+    if (eff_len < 1.0) { eff_len <- orig_len }
+    
+    return(eff_len)
+  }
+  
+  unlist(lapply(lengths, eff_length))
+}
+
+
