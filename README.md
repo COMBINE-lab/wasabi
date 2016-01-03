@@ -1,5 +1,7 @@
 # What is wasabi?
 
+[![Join the chat at https://gitter.im/COMBINE-lab/wasabi](https://badges.gitter.im/COMBINE-lab/wasabi.svg)](https://gitter.im/COMBINE-lab/wasabi?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Wasabi allows you to easily prepare [Sailfish](https://github.com/kingsfordgroup/sailfish) and [Salmon](https://github.com/COMBINE-lab/salmon) output for downstream analysis.  
 Currently, its main purpose it to prepare output for downstream analysis with [sleuth](http://pachterlab.github.io/sleuth/).
 
