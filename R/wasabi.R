@@ -4,16 +4,46 @@
 #' string points to a sailfish/salmon output directory
 #' @export
 prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE, fallback_mu=200, fallback_sd=80, fallback_num_reads=-1) {
+  
+  len_mu = length(fallback_mu)
+  len_sd = length(fallback_sd)
+  len_nr = length(fallback_num_reads)
+  len_dir = length(fish_dirs)
+  
+  # from : http://stackoverflow.com/questions/4752275/test-for-equality-among-all-elements-of-a-single-vector
+  compare <- function(v) all(sapply( as.list(v[-1]), FUN=function(z) {identical(z, v[1])}))
+  same_len = compare(c(1, len_mu, len_sd, len_nr))
+  
   testdir <- fish_dirs[1]
   ## If we're dealing with the new format files 
   if (file.exists(file.path(testdir, "aux", "meta_info.json"))) {
-    sapply(fish_dirs, fish_to_hdf5, force=force)
+    if (!same_len) {
+      same_len = compare(c(len_dir, len_nr))
+    }
+    if (same_len) {
+      mapply(fish_to_hdf5, fish_dirs, force=force, fallback_num_reads=fallback_num_reads)
+    }
   } else {
   ## We're dealing with the old format files
-    sapply(fish_dirs, fish_to_hdf5_old, force=force, 
+    same_len = compare(c(1, len_mu, len_sd, len_nr))
+    if (!same_len) {
+      same_len = compare(c(len_dir, len_mu, len_sd, len_nr))
+    }
+    if (same_len) {
+      mapply(fish_to_hdf5, fish_dirs, force=force, 
            fallback_mu=fallback_mu, fallback_sd=fallback_sd, fallback_num_reads=fallback_num_reads)
+    }
   }
-  fish_dirs
+  
+  if (!same_len) {
+    msg <- paste("ERROR: If you are passing in fallback arguments (mu, sd, and num_reads) there must",
+                 "be either a single value for each to apply to all results, or it must be a",
+                 "vector of the same length as fish_dirs");
+    message(msg)
+    FALSE
+  } else {
+    TRUE
+  }
 }
 
 #' Convert sailfish results in new format
@@ -22,7 +52,7 @@ prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE, fallback_mu=200, fal
 #'
 #' @param fish_dir path to a sailfish output directory
 #' @param force if TRUE re-create the h5 file even if it exists
-fish_to_hdf5 <- function(fish_dir, force) {
+fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
   h5file <- file.path(fish_dir, 'abundance.h5')
   if (!force && file.exists(h5file)) {
     print(paste("Skipping conversion: abundance.h5 already in ", fish_dir))
@@ -56,6 +86,35 @@ fish_to_hdf5 <- function(fish_dir, force) {
   # load stats
   numProcessed <- minfo$num_processed
 
+  # If we're dealing with salmon, this field should be defined
+  if (is.element("mapping_type", names(minfo))) {
+    # In alignment mode (since unaligned reads may not be included in the BAM file)
+    # we prefer to have the user supply the total number of reads in the input library
+    if (minfo$mapping_type == "alignment") {
+      if (fallback_num_reads == -1) {
+        msg <- paste("Since salmon was run in alignment mode, it is recommended you provide",
+                     "the total number of input reads via the fallback_num_reads argument to",
+                     "prepare_fish_for_sleuth()")
+        message(msg)
+      } else {
+        msg <- paste("Fish dir =", fish_dir, ":: fallback # reads =", fallback_num_reads)
+        message(msg)
+        numProcessed <- fallback_num_reads
+      }
+    } else if(minfo$mapping_type == "mapping" && fallback_num_reads != -1) {
+      msg <- paste("It is generally NOT recommended to provide a fallback # of reads",
+                   "when salmon was run in mapping-based mode, as it should already",
+                   "accurately record this information. Please make sure you really",
+                   "mean to do this!")
+      message(msg)
+      msg <- paste("Fish dir =", fish_dir, ":: fallback # reads =", fallback_num_reads)
+      message(msg)
+      numProcessed <- fallback_num_reads
+    }
+  }
+  # Otherwise, this is either sailfish or salmon's mapping-mode and the 
+  # numProcessed estimate should be OK.
+  
   # build the hdf5
   rhdf5::h5createFile(h5file)
 
@@ -170,6 +229,8 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
     if (fallback_num_reads < 0) {
       numProcessed <- round(sum(quant$est_counts))
     } else {
+      msg <- paste("Fish dir =", fish_dir, ":: fallback # reads =", fallback_num_reads)
+      message(msg)
       numProcessed <- fallback_num_reads
     }
     print(sprintf('Setting number of processed reads to %d', numProcessed))
