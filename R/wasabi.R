@@ -30,7 +30,7 @@ prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE, fallback_mu=200, fal
       same_len = compare(c(len_dir, len_mu, len_sd, len_nr))
     }
     if (same_len) {
-      mapply(fish_to_hdf5, fish_dirs, force=force, 
+      mapply(fish_to_hdf5_old, fish_dirs, force=force, 
            fallback_mu=fallback_mu, fallback_sd=fallback_sd, fallback_num_reads=fallback_num_reads)
     }
   }
@@ -67,6 +67,9 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
   # load quantification data
   quant <- fread(file.path(fish_dir, 'quant.sf'))
   setnames(quant, c('target_id', 'length', 'eff_length', 'tpm', 'est_counts'))
+  if (!is.character(quant$target_id)) {
+    quant$target_id <- as.character(quant$target_id)
+  }
 
   # get all of the meta info
   minfo <- rjson::fromJSON(file=file.path(fish_dir, "aux", "meta_info.json"))
@@ -182,15 +185,18 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
   # load quantification data
   quant <- fread(file.path(fish_dir, 'quant.sf'))
   setnames(quant, c('target_id', 'length', 'tpm', 'est_counts'))
+  # NOTE: this can re-order the rows!
+  if (!is.character(quant$target_id)) {
+    quant$target_id <- as.character(quant$target_id)
+  }
   setkey(quant, 'target_id')
-
-
+  
   # load bootstrap data if it exists
   bootspath <- file.path(fish_dir, 'quant_bootstraps.sf')
   numBoot <- 0
   if (file.exists(bootspath)) {
     boots <- fread(bootspath)
-    target_ids <- names(boots)
+    target_ids <- as.character(names(boots))
     boots <- data.table(t(boots))
     setnames(boots, sapply(0:(ncol(boots)-1), function(i) paste('bs', i, sep='')))
     numBoot <- ncol(boots)
@@ -211,6 +217,9 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
     names(stats) <- stats_tbl$V1
     stats_tbl <- stats_tbl[-1]
     setnames(stats_tbl, c('target_id', 'eff_length'))
+    if (!is.character(quant$target_id)) {
+      stats_tbl$target_id <- as.character(stats_tbl$target_id)
+    }
     setkey(stats_tbl, 'target_id')
     quant <- merge(quant, stats_tbl)
     numProcessed <- stats[['numObservedFragments']]
