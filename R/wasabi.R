@@ -14,9 +14,24 @@ prepare_fish_for_sleuth <- function(fish_dirs, force=FALSE, fallback_mu=200, fal
   compare <- function(v) all(sapply( as.list(v[-1]), FUN=function(z) {identical(z, v[1])}))
   same_len = compare(c(1, len_mu, len_sd, len_nr))
   
+  # We'll assume, for the time being, that all paths are from 
+  # the same version of the software
   testdir <- fish_dirs[1]
+  
+  # The default aux directory
+  aux_dir = "aux"
+  if (file.exists(file.path(testdir, "cmd_info.json"))) {
+    cmd_info <- rjson::fromJSON(file=file.path(testdir, "cmd_info.json"))
+    # If the user provided a different auxiliary directory, use that instead
+    if (is.element("auxDir", names(cmd_info))) {
+      aux_dir = cmd_info$auxDir
+    }
+  }
+  # The path to the aux directory if it exists
+  auxPath <- file.path(testdir, aux_dir)
+
   ## If we're dealing with the new format files 
-  if (file.exists(file.path(testdir, "aux", "meta_info.json"))) {
+  if (file.exists(file.path(auxPath, "meta_info.json"))) {
     if (!same_len) {
       same_len = compare(c(len_dir, len_nr))
     }
@@ -71,11 +86,18 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     quant$target_id <- as.character(quant$target_id)
   }
 
+  aux_dir = "aux"
+  cmd_info <- rjson::fromJSON(file=file.path(fish_dir, "cmd_info.json"))
+  # If the user provided a different auxiliary directory, use that instead
+  if (is.element("auxDir", names(cmd_info))) {
+    aux_dir = cmd_info$auxDir
+  }
+  auxPath <- file.path(fish_dir, aux_dir)
+  
   # get all of the meta info
-  minfo <- rjson::fromJSON(file=file.path(fish_dir, "aux", "meta_info.json"))
+  minfo <- rjson::fromJSON(file=file.path(auxPath, "meta_info.json"))
 
   # load bootstrap data if it exists
-  auxPath <- file.path(fish_dir, 'aux')
   numBoot <- minfo$num_bootstraps
   if (numBoot > 0) {
     bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
