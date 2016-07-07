@@ -1,3 +1,11 @@
+**Important note for Windows users**:  If you are running Wasabi under R or R studio on Windows, there is a known issue (bug, I would say) that prevents normal operation.  Salmon and Sailfish output important extra information like bootstrap samples and the fragment length distribution to a subdirectory of the quantification directory named `aux`.  Windows, unfortunately, [forbids `aux` as a folder name](https://blog.onetechnical.com/2006/11/16/forbidden-file-and-folder-names-on-windows/).  If you are lucky enough to be reading this *before* running Sailfish/Salmon, you can pass an alternative folder name to the `--auxDir` command line option to avoid this issue.  Otherwise, we suggest the following work-around.  First, rename the `aux` subdirectory of each Sailfish/Salmon quantification directory to be a folder name that is not forbidden under Windows e.g. `aux2`.  Then, open the `cmd_info.json` file in the quantification directory, and add the following line:
+
+```
+"auxDir" : "aux2",
+```
+
+Now, things should work normally under windows.  Future releases of Sailfish (>0.10.1) and Salmon (>0.6.0) will use a different default name for the auxiliary directory to avoid this issue in the future.
+
 # What is wasabi?
 
 [![Join the chat at https://gitter.im/COMBINE-lab/wasabi](https://badges.gitter.im/COMBINE-lab/wasabi.svg)](https://gitter.im/COMBINE-lab/wasabi?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
