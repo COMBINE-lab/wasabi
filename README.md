@@ -4,7 +4,7 @@
 "auxDir" : "aux2",
 ```
 
-Now, things should work normally under windows.  Future releases of Sailfish (>0.10.1) and Salmon (>0.6.0) will use a different default name for the auxiliary directory to avoid this issue in the future.
+Now, things should work normally under windows.  Salmon versions (>=0.7.0) use `aux_info` as the default folder to avoid this issue.  Future releases of Sailfish (>0.10.1) will use a different default name for the auxiliary directory to avoid this issue as well.
 
 # What is wasabi?
 
