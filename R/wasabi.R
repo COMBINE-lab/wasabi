@@ -96,12 +96,38 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
   
   # get all of the meta info
   minfo <- rjson::fromJSON(file=file.path(auxPath, "meta_info.json"))
-
+  sampType <- NULL
+  # check if we have explicitly recorded the type of posterior sample
+  # (salmon >= 0.7.3)
+  if (is.element("samp_type", names(minfo))) {
+    sampType <- minfo$samp_type
+  }
+  
+  
   # load bootstrap data if it exists
+  knownSampleTypes <- c("gibbs", "bootstrap")
   numBoot <- minfo$num_bootstraps
   if (numBoot > 0) {
     bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
-    boots <- readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+    #knownSampleType <- ifelse(is.null(sampType), FALSE, sampType %in% knownSampleTypes)
+    #if (knownSampleType) {
+    #  boots <- readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+    #} else {
+    #}
+    
+    ##
+    # Gibbs samples *used* to be integers, and bootstraps were doubles
+    # Now, however, both types of samples are doubles.  The code below 
+    # tries to load doubles first, but falls back to integers if it fails.
+    ##
+    boots <- tryCatch({
+      readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+    }, error=function(...) { 
+      # close and re-open the connection to reset the file
+      close(bootCon)
+      bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
+      readBin(bootCon, "integer", n = minfo$num_targets * minfo$num_bootstraps)
+    })
     close(bootCon)
 
     # rows are transcripts, columns are bootstraps
