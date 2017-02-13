@@ -119,14 +119,17 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     # Gibbs samples *used* to be integers, and bootstraps were doubles
     # Now, however, both types of samples are doubles.  The code below 
     # tries to load doubles first, but falls back to integers if it fails.
-    ##
+    ##   
+    expected.n <- minfo$num_targets * minfo$num_bootstraps
     boots <- tryCatch({
-      readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
-    }, error=function(...) { 
+      bootsIn <- readBin(bootCon, "double", n = expected.n)
+      stopifnot(length(boots.in) == expected.n)
+      bootsIn
+    }, error=function(...) {
       # close and re-open the connection to reset the file
       close(bootCon)
       bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
-      readBin(bootCon, "integer", n = minfo$num_targets * minfo$num_bootstraps)
+      readBin(bootCon, "integer", n = expected.n)
     })
     close(bootCon)
 
