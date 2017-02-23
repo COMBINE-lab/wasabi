@@ -122,7 +122,7 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     ##   
     expected.n <- minfo$num_targets * minfo$num_bootstraps
     boots <- tryCatch({
-      bootsIn <- readBin(bootCon, "double", n = expected.n)
+      boots.in <- readBin(bootCon, "double", n = expected.n)
       stopifnot(length(boots.in) == expected.n)
       bootsIn
     }, error=function(...) {
