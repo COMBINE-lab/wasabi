@@ -134,7 +134,7 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
       readBin(bootCon, "integer", n = expected.n)
     })
     close(bootCon)
-
+    boots <- as.double(boots)
     # rows are transcripts, columns are bootstraps
     dim(boots) <- c(minfo$num_targets, minfo$num_bootstraps)
   }
