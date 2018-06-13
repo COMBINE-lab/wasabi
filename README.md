@@ -31,7 +31,7 @@ First, you need to install the wasabi package.  There are two main ways to accom
 #### Installation with bioconda
   Alternatively, you can use the [conda](http://conda.pydata.org/miniconda.html) package manager, along with the [bioconda](https://bioconda.github.io/) channel to install `wasabi`:
   ```
-  conda install --channel bioconda r-wasabi
+  conda create -n wasabi r-wasabi
   ```
 
 ## Loading and using wasabi
