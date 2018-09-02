@@ -211,7 +211,12 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
   close(bExpCon)
   rhdf5::h5write(bExp, h5file, 'aux/bias_normalized')
 
-  rhdf5::H5close()
+
+  if(utils::packageVersion('rhdf5') < "2.23.0") {
+    rhdf5::H5close()
+  } else {
+    rhdf5::h5closeAll()
+  }
   print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
 
@@ -325,7 +330,11 @@ fish_to_hdf5_old <- function(fish_dir, force, fallback_mu, fallback_sd, fallback
     })
   }
 
-  rhdf5::H5close()
+  if(utils::packageVersion('rhdf5') < "2.23.0") {
+    rhdf5::H5close()
+  } else {
+    rhdf5::h5closeAll()
+  }
   print(paste("Successfully converted sailfish / salmon results in", fish_dir, "to kallisto HDF5 format"))
 }
 
