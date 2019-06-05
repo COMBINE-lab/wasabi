@@ -111,7 +111,7 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
     #knownSampleType <- ifelse(is.null(sampType), FALSE, sampType %in% knownSampleTypes)
     #if (knownSampleType) {
-    #  boots <- readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+    #  boots <- readBin(bootCon, "double", n = num_targets * minfo$num_bootstraps)
     #} else {
     #}
     
@@ -120,13 +120,13 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     # Now, however, both types of samples are doubles.  The code below 
     # tries to load doubles first, but falls back to integers if it fails.
     ##   
-    if("num_targets" %in% colnames(minfo)) {
+    if("num_targets" %in% names(minfo)) {
         num_targets = minfo$num_targets
     }
     else {
         num_targets = minfo$num_valid_targets
     }
-    expected.n <- minfo$num_targets * minfo$num_bootstraps
+    expected.n <- num_targets * minfo$num_bootstraps
     boots <- tryCatch({
       boots.in <- readBin(bootCon, "double", n = expected.n)
       stopifnot(length(boots.in) == expected.n)
@@ -140,7 +140,7 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     close(bootCon)
     boots <- as.double(boots)
     # rows are transcripts, columns are bootstraps
-    dim(boots) <- c(minfo$num_targets, minfo$num_bootstraps)
+    dim(boots) <- c(num_targets, minfo$num_bootstraps)
   }
 
   # load stats
