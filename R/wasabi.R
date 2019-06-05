@@ -120,6 +120,12 @@ fish_to_hdf5 <- function(fish_dir, force, fallback_num_reads) {
     # Now, however, both types of samples are doubles.  The code below 
     # tries to load doubles first, but falls back to integers if it fails.
     ##   
+    if("num_targets" %in% colnames(minfo)) {
+        num_targets = minfo$num_targets
+    }
+    else {
+        num_targets = minfo$num_valid_targets
+    }
     expected.n <- minfo$num_targets * minfo$num_bootstraps
     boots <- tryCatch({
       boots.in <- readBin(bootCon, "double", n = expected.n)
