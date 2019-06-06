@@ -1,7 +1,7 @@
 Package: wasabi
 Type: Package
 Title: Use Sailfish and Salmon with Sleuth; easily
-Version: 0.4
+Version: 1.0.1
 Date: 2019-06-05
 Authors@R: c(person("Richard", "Smith-Unna", email = "rds45@cam.ac.uk", role = c("aut")), person("Rob", "Patro", email = "rob.patro@cs.stonybrook.edu", role = c("aut", "cre")))
 Description: This package converts the output of the Sailfish and Salmon RNA-seq quantification tools so that it can be used with the Sleuth differential analysis package.
